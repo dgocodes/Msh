@@ -4,7 +4,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Msh.Api/Dockerfile
+      dockerfile: src/Msh.Api/Dockerfile
     container_name: msh-api
     deploy:
       resources:
