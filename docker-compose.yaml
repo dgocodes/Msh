@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Msh.Api/Dockerfile
+    container_name: msh-api
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 1.5G
+          pids: 2000
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      #ConnectionStrings__RedisConnection: "redis:6379"
+      MeiliSearch__Url: "http://meilisearch:7700"
+      MeiliSearch__ApiKey: "devseguro"
+      MeiliSearch__IndexName: "produtos"
+      # Ajuste de sintaxe abaixo:
+      #RateLimit__Global: "2000000000"
+      #RateLimit__SearchEndpoint: "2000000000"
+      #Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
+      #Serilog__MinimumLevel__Default: "Warning" # Importante para o teste de carga!
+      #EnableCacheSettings: "true" # Desativa cache para testar o desempenho real do Meilisearch
+    depends_on:
+      #redis:
+      #  condition: service_healthy
+      meilisearch:
+        condition: service_healthy 
+
+  #redis:
+  #  image: redis:7-alpine # Alpine é mais leve para testes
+  #  container_name: revs-redis
+  #  deploy:
+  #    resources:
+  #      limits:
+  #        cpus: '0.5'
+  #        memory: 512M
+  #  ports:
+  #    - "6379:6379"
+  #  command: ["redis-server", "--appendonly", "yes"]
+  #  healthcheck:
+  #    test: ["CMD", "redis-cli", "ping"]
+  #    interval: 5s
+  #    timeout: 3s
+  #    retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: msh-meili
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 1G
+    environment:
+      MEILI_MASTER_KEY: "devseguro"
+      MEILI_NO_ANALYTICS: "true" # Bom para performance em teste
+      MEILI_LOG_LEVEL: "WARN"
+    ports:
+      - "7700:7700"
+    healthcheck:
+      # Usei curl pois algumas imagens não vem com wget
+      test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  #seq:
+  #  image: datalust/seq:latest
+  #  container_name: revs-seq
+  #  environment:
+  #    ACCEPT_EULA: "Y"
+  #    SEQ_FIRSTRUN_NOAUTHENTICATION: "true" # Desativa autenticação para facilitar testes
+  #  ports:
+  #    - "8081:80"    # A interface do Seq ficará em http://localhost:8081
+  #    - "5341:5341"  # Porta de ingestão de logs
+  #  deploy:
+  #    resources:
+  #      limits:
+  #        memory: 1G  # Seq pode consumir bastante RAM se houver muitos logs
+
+volumes:
+  pgdata: # Pode manter aqui, mesmo comentado lá em cima

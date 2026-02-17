@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yaml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="Msh.Api/Msh.Api.csproj" />
+  </Folder>
+</Solution>
