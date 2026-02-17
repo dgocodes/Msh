@@ -1,10 +1,11 @@
 ﻿using Msh.Api.Domain.Contracts.Search;
+using Msh.Api.Infra.Providers.Meili;
 
 namespace Msh.Api.Domain.Interfaces.Builders;
 
 public interface IFacetBuilder
 {
     List<FacetResponse> Build(IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> resultFacets,
-                              Dictionary<string, string> facets,
-                              IEnumerable<string>? activeFilters);
+                              IReadOnlyList<FacetConfig> facetConfigs,
+                              IReadOnlyList<string>? activeFilters);
 }

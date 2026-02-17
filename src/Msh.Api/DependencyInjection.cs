@@ -171,6 +171,14 @@ public static class DependencyInjection
               .ValidateDataAnnotations()
               .ValidateOnStart();
 
+        services.PostConfigure<MeiliSearchConfiguration>(options =>
+        {
+            if (options.Configuration.Facets != null)
+            {
+                options.Configuration.Facets = options.Configuration.Facets.OrderBy(f => f.Position).ToList();
+            }
+        });
+
         services.AddHttpClient(MeiliSearchConfiguration.ClientName, (serviceProvider, client) =>
         {
             var configMeilisearch = serviceProvider.GetRequiredService<IOptions<MeiliSearchConfiguration>>().Value;
