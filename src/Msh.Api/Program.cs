@@ -12,13 +12,18 @@ builder.Services.AddOpenApi()
                 .AddCustomCompression()
                 .AddMeiliSearchServices(configuration)
                 .AddCustomCors(configuration)
-                .AddApplicationServices(configuration);
+                .AddApplicationServices(configuration)
+                .AddCustomRateLimiting(configuration)
+                .AddCustomHybridCacheRedis(configuration);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.MapHealthChecks("/health");
 
 if (app.Environment.IsDevelopment())
 {
@@ -27,12 +32,12 @@ if (app.Environment.IsDevelopment())
 }
 
 var name = configuration.GetValue<string>("Cors:Name") ?? "NextJsApp";
-
 app.UseCors(name);
+
 app.UseResponseCompression();
-app.UseExceptionHandler();
+
+app.UseRateLimiter();
 
 app.MapProductEndpoints();
-app.MapHealthChecks("/health");
 
 app.Run();
