@@ -54,7 +54,9 @@ builder.Services.AddCors(opt =>
 builder.Services.AddScoped<ISearchProvider, MeiliSearchProvider>();
 builder.Services.AddSingleton<IFacetBuilder, FacetBuilder>();
 
-ThreadPool.SetMinThreads(200, 200);
+//ThreadPool.SetMinThreads(200, 200);
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -85,10 +87,7 @@ app.MapGet("/products", async (
 
        return Task.CompletedTask;
    });
-//.AddOpenApiOperationTransformer(operation => {
-//    operation.Summary = "Busca produtos no Meilisearch";
-//    return operation;
-//});
 
+app.MapHealthChecks("/health");
 
 app.Run();
