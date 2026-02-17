@@ -32,7 +32,14 @@ public record MeilisearchSettings
     [MinLength(1, ErrorMessage = "Defina ao menos um atributo para recuperar (AttributesToRetrieve).")]
     public string[] AttributesToRetrieve { get; init; } = [];
 
-    public Dictionary<string, string> Facets { get; init; } = [];
+    public IReadOnlyList<FacetConfig> Facets { get; set; } = [];
 
     public string[] GetCurrentFacets() => [.. Facets.Select(x => x.Key)];
+}
+
+public class FacetConfig
+{
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public int Position { get; set; }
 }

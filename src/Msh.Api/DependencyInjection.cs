@@ -2,8 +2,10 @@ using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Meilisearch;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
 using Msh.Api.Domain.Builders;
 using Msh.Api.Domain.Interfaces.Builders;
@@ -33,14 +35,14 @@ public static class DependencyInjection
         services.AddResponseCompression(opt =>
         {
             opt.EnableForHttps = true;
-            opt.Providers.Add<BrotliCompressionProvider>();
+            //opt.Providers.Add<BrotliCompressionProvider>();
             opt.Providers.Add<GzipCompressionProvider>();
         });
 
-        services.Configure<BrotliCompressionProviderOptions>(opt =>
-        {
-            opt.Level = CompressionLevel.Fastest;
-        });
+        //services.Configure<BrotliCompressionProviderOptions>(opt =>
+        //{
+        //    opt.Level = CompressionLevel.Fastest;
+        //});
 
         services.Configure<GzipCompressionProviderOptions>(opt =>
         {
@@ -73,6 +75,87 @@ public static class DependencyInjection
         return services;
     }
 
+    public static IServiceCollection AddCustomRateLimiting(
+      this IServiceCollection services,
+      IConfiguration configuration)
+    {
+        if (configuration.GetValue("Features:UseRateLimit", true))
+        {
+            int globalLimit = configuration.GetValue("RateLimit:Global", 500);
+            int endpointLimit = configuration.GetValue("RateLimit:SearchEndpoint", 250);
+
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+                {
+                    // Ignora o limite para o endpoint de health check
+                    if (ctx.Request.Path.StartsWithSegments("/health"))
+                    {
+                        return RateLimitPartition.GetNoLimiter("health");
+                    }
+
+                    var key = ctx.User.Identity?.Name
+                              ?? ctx.Connection.RemoteIpAddress?.ToString()
+                              ?? "anonymous";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = globalLimit,
+                            Window = TimeSpan.FromMinutes(1)
+                        });
+                });
+
+                options.AddPolicy("buscas", ctx =>
+                {
+                    var key = ctx.User.Identity?.Name
+                              ?? ctx.Connection.RemoteIpAddress?.ToString()
+                              ?? "anonymous";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = endpointLimit,
+                            Window = TimeSpan.FromMinutes(1)
+                        });
+                });
+            });
+        }
+
+        return services;
+    }
+
+
+    public static IServiceCollection AddCustomHybridCacheRedis(this IServiceCollection services, IConfiguration configuration)
+    {
+        if (configuration.GetValue("Features:UseRedis", true))
+        {
+            // 1. Configura a conexão base com o Redis
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration.GetConnectionString("Redis");
+                options.InstanceName = "MshCache-";
+            });
+        }
+
+        services.AddHybridCache(options =>
+        {
+            // Define o limite de tamanho do que pode ser cacheado
+            options.MaximumPayloadBytes = 3 * 1024 * 1024; // 3 MB
+            options.MaximumKeyLength = 250;
+
+            // Define o tempo padrão de expiração
+            options.DefaultEntryOptions = new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(10), //Tempo total de expiração (tanto para cache local quanto para Redis)
+                LocalCacheExpiration = TimeSpan.FromMinutes(5) // Tempo de expiração para o cache local (pode ser menor que o tempo total para reduzir a chance de cache stale)
+            };
+        });
+
+        return services;
+    }
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ISearchProvider, MeiliSearchProvider>();
@@ -87,6 +170,14 @@ public static class DependencyInjection
               .Bind(configuration.GetSection(MeiliSearchConfiguration.SectionName))
               .ValidateDataAnnotations()
               .ValidateOnStart();
+
+        services.PostConfigure<MeiliSearchConfiguration>(options =>
+        {
+            if (options.Configuration.Facets != null)
+            {
+                options.Configuration.Facets = options.Configuration.Facets.OrderBy(f => f.Position).ToList();
+            }
+        });
 
         services.AddHttpClient(MeiliSearchConfiguration.ClientName, (serviceProvider, client) =>
         {

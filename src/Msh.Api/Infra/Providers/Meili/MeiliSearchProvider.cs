@@ -32,7 +32,7 @@ public class MeiliSearchProvider : ISearchProvider
 
         var searchQuery = new SearchQuery
         {
-            //Sort = BuildSort(criteria.Sort),
+            Sort = request.BuildSort(),
             Filter = filters,
             Limit = request.PageSize,
             Offset = request.Offset,
@@ -43,7 +43,7 @@ public class MeiliSearchProvider : ISearchProvider
         var searchResponse = await _index.SearchAsync<ProductResponse>(request.Query, searchQuery, cancellationToken); 
         var result = (SearchResult<ProductResponse>)searchResponse;
 
-        var facets = _facetBuilder.Build(result.FacetDistribution, _meiliSettings.Configuration?.Facets ?? [], request.Filters);
+        var facets = _facetBuilder.Build(result.FacetDistribution, _meiliSettings.Configuration?.Facets ?? [], request.AppliedFilters());
 
         _logger.LogInformation(
             "Search performed | Term={Term} | Filters={Filters} | Page={Page} | PageSize={PageSize} | Hits={TotalHits} | Duration={Elapsed:0.0000}ms",

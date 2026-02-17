@@ -1,28 +1,34 @@
 ﻿using Msh.Api.Domain.Contracts.Search;
 using Msh.Api.Domain.Interfaces.Builders;
+using Msh.Api.Infra.Providers.Meili;
 
 namespace Msh.Api.Domain.Builders;
 
 public class FacetBuilder : IFacetBuilder
 {
-    public List<FacetResponse> Build(IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> resultFacets,
-                                     Dictionary<string, string> facets,
-                                     IEnumerable<string>? activeFilters)
+    public List<FacetResponse> Build(
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> resultFacets,
+        IReadOnlyList<FacetConfig> facetConfigs,
+        IReadOnlyList<string>? activeFilters)
     {
-        if (resultFacets is null)
-            return default!;
+        if (resultFacets == null || resultFacets.Count == 0)
+            return [];
 
-        var activeFiltersSet = new HashSet<string>(activeFilters ?? [], StringComparer.OrdinalIgnoreCase);
-        var facetsResult = new List<FacetResponse>(facets.Count);
+        var activeFiltersSet = activeFilters?.Any() == true
+            ? new HashSet<string>(activeFilters, StringComparer.OrdinalIgnoreCase)
+            : null;
 
-        foreach (var facetKey in facets)
+        var facetsResult = new List<FacetResponse>(facetConfigs.Count);
+
+        foreach (var config in facetConfigs)
         {
-            if (resultFacets.TryGetValue(facetKey.Key, out var items))
+            if (resultFacets.TryGetValue(config.Key, out var items))
             {
                 var mappedItems = MapFacetsToFilters(items, activeFiltersSet);
+
                 if (mappedItems.Count > 0)
                 {
-                    facetsResult.Add(new FacetResponse(facetKey.Value, mappedItems));
+                    facetsResult.Add(new FacetResponse(config.Label, mappedItems));
                 }
             }
         }
@@ -30,7 +36,7 @@ public class FacetBuilder : IFacetBuilder
         return facetsResult;
     }
 
-    private static List<FacetItemResponse> MapFacetsToFilters(IReadOnlyDictionary<string, int> items, HashSet<string> activeFilters)
+    private static List<FacetItemResponse> MapFacetsToFilters(IReadOnlyDictionary<string, int> items, HashSet<string>? activeFilters)
     {
         var hierarchy = new Dictionary<string, FacetItemResponse>(items.Count);
 
