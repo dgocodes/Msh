@@ -34,9 +34,13 @@ if (app.Environment.IsDevelopment())
 var name = configuration.GetValue<string>("Cors:Name") ?? "NextJsApp";
 app.UseCors(name);
 
+
 app.UseResponseCompression();
 
-app.UseRateLimiter();
+if (configuration.GetValue("Features:UseRateLimit", true))
+{
+    app.UseRateLimiter();
+}
 
 app.MapProductEndpoints();
 

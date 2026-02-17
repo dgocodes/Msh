@@ -14,7 +14,8 @@ public static class ProductEndpoints
            .WithName("SearchProducts")
            .WithTags("Products")
            .WithSummary("Search Products")
-           .WithDescription("Searches for products based on a query and optional filters on provider Meilisearch.");
+           .WithDescription("Searches for products based on a query and optional filters on provider Meilisearch.")
+           .RequireRateLimiting("buscas");
 
         return app;
     }

@@ -79,47 +79,50 @@ public static class DependencyInjection
       this IServiceCollection services,
       IConfiguration configuration)
     {
-        int globalLimit = configuration.GetValue("RateLimit:Global", 500);
-        int endpointLimit = configuration.GetValue("RateLimit:SearchEndpoint", 250);
-
-        services.AddRateLimiter(options =>
+        if (configuration.GetValue("Features:UseRateLimit", true))
         {
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            int globalLimit = configuration.GetValue("RateLimit:Global", 500);
+            int endpointLimit = configuration.GetValue("RateLimit:SearchEndpoint", 250);
 
-            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+            services.AddRateLimiter(options =>
             {
-                // Ignora o limite para o endpoint de health check
-                if (ctx.Request.Path.StartsWithSegments("/health"))
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 {
-                    return RateLimitPartition.GetNoLimiter("health");
-                }
-
-                var key = ctx.User.Identity?.Name
-                          ?? ctx.Connection.RemoteIpAddress?.ToString()
-                          ?? "anonymous";
-
-                return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
-                    new FixedWindowRateLimiterOptions
+                    // Ignora o limite para o endpoint de health check
+                    if (ctx.Request.Path.StartsWithSegments("/health"))
                     {
-                        PermitLimit = globalLimit,
-                        Window = TimeSpan.FromMinutes(1)
-                    });
-            });
+                        return RateLimitPartition.GetNoLimiter("health");
+                    }
 
-            options.AddPolicy("buscas", ctx =>
-            {
-                var key = ctx.User.Identity?.Name
-                          ?? ctx.Connection.RemoteIpAddress?.ToString()
-                          ?? "anonymous";
+                    var key = ctx.User.Identity?.Name
+                              ?? ctx.Connection.RemoteIpAddress?.ToString()
+                              ?? "anonymous";
 
-                return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
-                    new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = endpointLimit,
-                        Window = TimeSpan.FromMinutes(1)
-                    });
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = globalLimit,
+                            Window = TimeSpan.FromMinutes(1)
+                        });
+                });
+
+                options.AddPolicy("buscas", ctx =>
+                {
+                    var key = ctx.User.Identity?.Name
+                              ?? ctx.Connection.RemoteIpAddress?.ToString()
+                              ?? "anonymous";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = endpointLimit,
+                            Window = TimeSpan.FromMinutes(1)
+                        });
+                });
             });
-        });
+        }
 
         return services;
     }
@@ -127,12 +130,15 @@ public static class DependencyInjection
 
     public static IServiceCollection AddCustomHybridCacheRedis(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Configura a conexão base com o Redis
-        services.AddStackExchangeRedisCache(options =>
+        if (configuration.GetValue("Features:UseRedis", true))
         {
-            options.Configuration = configuration.GetConnectionString("Redis");
-            options.InstanceName = "MshCache-";
-        });
+            // 1. Configura a conexão base com o Redis
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration.GetConnectionString("Redis");
+                options.InstanceName = "MshCache-";
+            });
+        }
 
         services.AddHybridCache(options =>
         {
