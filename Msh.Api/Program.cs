@@ -66,7 +66,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("NextJsApp");
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseExceptionHandler();
 
