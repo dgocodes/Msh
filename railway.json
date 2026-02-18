@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Msh.Api/Dockerfile"
+    "dockerfilePath": "src/Msh.Api/Dockerfile"
   },
   "deploy": {
     "startCommand": "dotnet Msh.Api.dll",
