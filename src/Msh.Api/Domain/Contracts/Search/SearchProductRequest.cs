@@ -3,7 +3,7 @@
 namespace Msh.Api.Domain.Contracts.Search;
 
 public record SearchProductRequest(
-    string Query,
+    string? Query = "",
     string? Sort = null,
     int Page = 1,
     int PageSize = 20,
