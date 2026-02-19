@@ -1,5 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Msh.Api;
 using Msh.Api.Endpoints;
+using Msh.Api.Infra.Context;
+using Msh.Api.Infra.Context.Seed;
+using Msh.Api.Infra.Identity;
+using Msh.Api.Infra.Security;
 using Msh.Api.Middleware;
 using Scalar.AspNetCore;
 
@@ -8,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 builder.Services.AddOpenApi()
+                .AddCustomAuth(configuration)
                 .AddCustomJsonOptions()
                 .AddCustomCompression()
                 .AddMeiliSearchServices(configuration)
@@ -15,6 +22,14 @@ builder.Services.AddOpenApi()
                 .AddApplicationServices(configuration)
                 .AddCustomRateLimiting(configuration)
                 .AddCustomHybridCacheRedis(configuration);
+
+builder.Services.AddDbContext<MshDbContext>(opt => opt.UseNpgsql(configuration.GetConnectionString("Postgres")));
+builder.Services.AddIdentityCore<ApplicationUser>()
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<MshDbContext>()
+                .AddSignInManager();
+
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -31,17 +46,18 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-var name = configuration.GetValue<string>("Cors:Name") ?? "NextJsApp";
-app.UseCors(name);
-
-
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseCors(configuration.GetValue<string>("Cors:Name") ?? "NextJsApp");
 app.UseResponseCompression();
 
-if (configuration.GetValue("Features:UseRateLimit", true))
-{
-    app.UseRateLimiter();
-}
+if (configuration.GetValue("Features:UseRateLimit", true)) app.UseRateLimiter();
 
+// Endpoints
+app.MapAuthEndpoints();
 app.MapProductEndpoints();
+app.MapGet("/seguro", () => "Autenticado!").RequireAuthorization();
+
+await DbInitializer.SeedAdminUser(app);
 
 app.Run();

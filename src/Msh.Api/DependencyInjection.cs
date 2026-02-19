@@ -1,12 +1,15 @@
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Meilisearch;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Msh.Api.Domain.Builders;
 using Msh.Api.Domain.Interfaces.Builders;
 using Msh.Api.Domain.Interfaces.Providers;
@@ -16,6 +19,57 @@ namespace Msh.Api;
 
 public static class DependencyInjection
 {
+    public static IServiceCollection AddCustomAuth(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection("Jwt");
+        var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
+
+        services.AddAuthentication(options => {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options => {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidateAudience = true,
+                ValidAudience = jwtSettings["Audience"],
+                ValidateLifetime = true
+            };
+        });
+
+        services.AddAuthorization();
+        return services;
+    }
+
+    //public static IServiceCollection AddCustomOpenApi(this IServiceCollection services)
+    //{
+    //    services.AddOpenApi(options => {
+    //        options.AddDocumentTransformer((document, context, cancellationToken) => {
+    //            var scheme = new OpenApiSecurityScheme
+    //            {
+    //                Type = SecuritySchemeType.Http,
+    //                Name = "Authorization",
+    //                In = ParameterLocation.Header,
+    //                Scheme = "bearer",
+    //                BearerFormat = "JWT"
+    //            };
+    //            document.Components ??= new OpenApiComponents();
+    //            document.Components.SecuritySchemes.Add("Bearer", scheme);
+    //            document.Security = [new OpenApiSecurityRequirement {
+    //                [new OpenApiSecurityScheme {
+    //                    Reference = new OpenApiReference { Type = OpenApiReferenceType.SecurityScheme, Id = "Bearer" }
+    //                }] = []
+    //            }];
+    //            return Task.CompletedTask;
+    //        });
+    //    });
+    //    return services;
+    //}
+
     public static IServiceCollection AddCustomJsonOptions(this IServiceCollection services)
     {
         services.ConfigureHttpJsonOptions(opt =>
@@ -104,7 +158,9 @@ public static class DependencyInjection
                         new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = globalLimit,
-                            Window = TimeSpan.FromMinutes(1)
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0 // Não permite enfileirar requisições, rejeita imediatamente quando o limite é atingido
                         });
                 });
 
@@ -118,7 +174,9 @@ public static class DependencyInjection
                         new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = endpointLimit,
-                            Window = TimeSpan.FromMinutes(1)
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
                         });
                 });
             });
