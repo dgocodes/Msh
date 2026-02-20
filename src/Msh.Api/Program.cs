@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Msh.Api;
 using Msh.Api.Endpoints;
+using Msh.Api.Endpoints.Admin;
 using Msh.Api.Infra.Context;
 using Msh.Api.Infra.Context.Seed;
 using Msh.Api.Infra.Identity;
@@ -56,6 +57,7 @@ if (configuration.GetValue("Features:UseRateLimit", true)) app.UseRateLimiter();
 // Endpoints
 app.MapAuthEndpoints();
 app.MapProductEndpoints();
+app.MapAdminUsersEndpoints();
 app.MapGet("/seguro", () => "Autenticado!").RequireAuthorization();
 
 await DbInitializer.SeedAdminUser(app);

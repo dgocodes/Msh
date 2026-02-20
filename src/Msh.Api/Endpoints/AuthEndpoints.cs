@@ -41,14 +41,15 @@ public static class AuthEndpoints
     private static async Task<IResult> HandleLogin(LoginDTO model,
                                                    UserManager<ApplicationUser> userManager,
                                                    ITokenService tokenService,
-                                                   MshDbContext context)
+                                                   MshDbContext context,
+                                                   HttpContext httpContext)
     {
         var user = await userManager.FindByEmailAsync(model.Email);
 
         if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
             return Results.Unauthorized();
 
-        var accessToken = tokenService.GenerateAccessToken(user);
+        var accessToken = await tokenService.GenerateAccessToken(user);
         var refreshTokenValue = tokenService.GenerateRefreshToken();
 
         // Salva o Refresh Token no banco
@@ -63,6 +64,38 @@ public static class AuthEndpoints
 
         context.UserRefreshTokens.Add(refreshToken);
         await context.SaveChangesAsync();
+
+        // Configuração para os Tokens (Segurança Máxima)
+        var tokenOptions = new CookieOptions
+        {
+            HttpOnly = true,   // Protege contra roubo via JavaScript (XSS)
+            Secure = true,     // Exige HTTPS
+            SameSite = SameSiteMode.Strict, // Protege contra CSRF
+            Expires = DateTime.UtcNow.AddHours(1) // Expiração curta para o Access Token
+        };
+
+        // Configuração para o Refresh Token (Expiração Longa)
+        var refreshOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(7) // Dura mais tempo
+        };
+
+        // Configuração para o Tipo de Usuário (Opcional: HttpOnly = false)
+        var infoOptions = new CookieOptions
+        {
+            HttpOnly = false,  // Deixe como false se você precisar ler isso no Front-end via JS
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(1)
+        };
+
+        // Enviando os Cookies
+        httpContext.Response.Cookies.Append("token", accessToken, tokenOptions);
+        httpContext.Response.Cookies.Append("refreshToken", refreshTokenValue, refreshOptions);
+        httpContext.Response.Cookies.Append("userType", user.Type.ToString(), infoOptions);
 
         return Results.Ok(new
         {

@@ -122,7 +122,8 @@ public static class DependencyInjection
                 policy.WithOrigins(allowedOrigins)
                       .AllowAnyHeader()
                       .AllowAnyMethod()
-                      .WithExposedHeaders("X-Correlation-ID");
+                      .AllowCredentials();
+                      //.WithExposedHeaders("X-Correlation-ID");
             })
         );
 
