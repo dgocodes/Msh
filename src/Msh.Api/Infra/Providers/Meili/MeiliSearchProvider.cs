@@ -1,8 +1,7 @@
 ﻿using Meilisearch;
 using Microsoft.Extensions.Options;
-using Msh.Api.Domain.Contracts.Search;
-using Msh.Api.Domain.Interfaces.Builders;
-using Msh.Api.Domain.Interfaces.Providers;
+using Msh.Api.Core.Abstractions;
+using Msh.Api.Features.Products.SearchProduts;
 
 namespace Msh.Api.Infra.Providers.Meili;
 

@@ -9,6 +9,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Endpoints\Admin\**" />
+	  <Content Remove="Endpoints\Admin\**" />
+	  <EmbeddedResource Remove="Endpoints\Admin\**" />
+	  <None Remove="Endpoints\Admin\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.3" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
@@ -26,6 +33,7 @@
 
 	<ItemGroup>
 		<Folder Include="Application\" />
+		<Folder Include="Core\Contracts\Search\" />
 		<Folder Include="Infra\Context\Migrations\" />
 	</ItemGroup>
 

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Msh.Api.Domain.Entities;
+using Msh.Api.Core.Entities;
 using Msh.Api.Infra.Identity;
 
 namespace Msh.Api.Infra.Context;

@@ -1,8 +1,8 @@
-﻿using Msh.Api.Domain.Contracts.Search;
-using Msh.Api.Domain.Interfaces.Builders;
+﻿using Msh.Api.Core.Abstractions;
+using Msh.Api.Features.Products.SearchProduts;
 using Msh.Api.Infra.Providers.Meili;
 
-namespace Msh.Api.Domain.Builders;
+namespace Msh.Api.Core.Builders;
 
 public class FacetBuilder : IFacetBuilder
 {

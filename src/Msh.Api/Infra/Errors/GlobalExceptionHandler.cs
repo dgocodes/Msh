@@ -3,7 +3,7 @@ using Meilisearch;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Msh.Api.Middleware;
+namespace Msh.Api.Infra.Errors;
 public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

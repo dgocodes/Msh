@@ -1,8 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Hybrid;
-using Msh.Api.Domain.Contracts.Search;
-using Msh.Api.Domain.Core;
-using Msh.Api.Domain.Interfaces.Providers;
-using Msh.Api.Extensions;
+﻿using Msh.Api.Core.Abstractions;
+using Msh.Api.Features.Products.SearchProduts;
 
 namespace Msh.Api.Endpoints;
 
@@ -14,33 +11,10 @@ public static class ProductEndpoints
                        .WithTags("Products")
                        .RequireRateLimiting("buscas"); 
 
-        group.MapGet("/", HandleSearchProducts)
-             .WithSummary("Search Products")
-             .WithDescription("Searches via Meilisearch with HybridCache.");
-
         group.MapGet("/{produto}", HandleSearchByName)
              .WithSummary("Search Products by Name");
 
         return app;
-    }
-
-    private static async Task<IResult> HandleSearchProducts(
-        ISearchProvider provider,
-        HybridCache cache,
-        [AsParameters] SearchProductRequest request,
-        CancellationToken ct)
-    {
-        // Gerar chave baseada nos campos da request para evitar colisões
-        var cacheKey = $"products:search:{request.GetHashCode()}";
-
-        var result = await cache.GetOrCreateAsync(
-            cacheKey,
-            async token => await provider.SearchAsync(request, token),
-            options: HybridCacheExtensions.CreateOptions(2, 5),
-            cancellationToken: ct
-        );
-
-        return TypedResults.Ok(result);
     }
 
     private static async Task<IResult> HandleSearchByName(

@@ -1,7 +1,7 @@
-﻿using Msh.Api.Domain.Contracts.Search;
+﻿using Msh.Api.Features.Products.SearchProduts;
 using Msh.Api.Infra.Providers.Meili;
 
-namespace Msh.Api.Domain.Interfaces.Builders;
+namespace Msh.Api.Core.Abstractions;
 
 public interface IFacetBuilder
 {

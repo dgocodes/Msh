@@ -1,5 +1,6 @@
-﻿using Msh.Api.Domain.Contracts.Search;
-namespace Msh.Api.Domain.Interfaces.Providers;
+﻿using Msh.Api.Features.Products.SearchProduts;
+
+namespace Msh.Api.Core.Abstractions;
 
 public interface ISearchProvider
 {

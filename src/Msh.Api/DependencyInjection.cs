@@ -10,9 +10,8 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Msh.Api.Domain.Builders;
-using Msh.Api.Domain.Interfaces.Builders;
-using Msh.Api.Domain.Interfaces.Providers;
+using Msh.Api.Core.Abstractions;
+using Msh.Api.Core.Builders;
 using Msh.Api.Infra.Providers.Meili;
 
 namespace Msh.Api;
@@ -38,6 +37,22 @@ public static class DependencyInjection
                 ValidateAudience = true,
                 ValidAudience = jwtSettings["Audience"],
                 ValidateLifetime = true
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    // Verifica se existe um cookie chamado "token"
+                    var accessToken = context.Request.Cookies["token"];
+
+                    // Se o token existir no cookie, extrai para o contexto de autenticação
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
             };
         });
 

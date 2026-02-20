@@ -1,4 +1,4 @@
-﻿namespace Msh.Api.Domain.Entities;
+﻿namespace Msh.Api.Core.Entities;
 
 public enum EUserType
 {

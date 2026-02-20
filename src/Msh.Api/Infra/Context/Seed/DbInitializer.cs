@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Msh.Api.Domain.Entities;
+using Msh.Api.Core.Entities;
 using Msh.Api.Infra.Identity;
 
 namespace Msh.Api.Infra.Context.Seed;

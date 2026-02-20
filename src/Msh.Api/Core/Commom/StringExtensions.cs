@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Msh.Api.Domain.Core;
+namespace Msh.Api.Core.Commom;
 
 
 public static class StringExtensions
