@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Msh.Api.Core.Entities;
+using Msh.Api.Core.Enums;
 
 namespace Msh.Api.Infra.Identity;
 
@@ -12,4 +12,6 @@ public class ApplicationUser : IdentityUser
 
     // Type identifier to facilitate quick filtering
     public EUserType Type { get; set; }
+
+    public List<UserRefreshToken> UserRefreshTokens { get; set; } = [];
 }

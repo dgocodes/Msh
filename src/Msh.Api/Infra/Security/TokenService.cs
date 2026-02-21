@@ -3,12 +3,44 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Msh.Api.Core.Entities;
 using Msh.Api.Infra.Identity;
 
 namespace Msh.Api.Infra.Security;
 
 public class TokenService(IConfiguration configuration, UserManager<ApplicationUser> userManager) : ITokenService
 {
+    public int TokenExpiresInHours => 10;
+    public int RefreshTokenExpiresInDays => 10;
+
+    public void AppendAuthCookies(HttpContext context, string accessToken, string refreshToken, ApplicationUser user)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(TokenExpiresInHours)
+        };
+
+        context.Response.Cookies.Append("token", accessToken, cookieOptions);
+
+        // O Cookie do userType é acessível via JavaScript para que o frontend possa ler e ajustar a UI conforme o tipo do usuário
+        cookieOptions.HttpOnly = false;
+        context.Response.Cookies.Append("userType", user.Type.ToString(), cookieOptions);
+        context.Response.Cookies.Append("username", user?.UserName ?? "", cookieOptions);
+        context.Response.Cookies.Append("erpId", user?.ErpId ?? "", cookieOptions);
+
+        context.Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            // O Cookie do Refresh dura muito mais (ex: 10 dias)
+            Expires = DateTime.UtcNow.AddDays(RefreshTokenExpiresInDays)
+        });
+    }
+
     public async Task<string> GenerateAccessToken(ApplicationUser user)
     {
         var secretKey = Encoding.ASCII.GetBytes(configuration["Jwt:Key"]
@@ -33,10 +65,10 @@ public class TokenService(IConfiguration configuration, UserManager<ApplicationU
         // 3. Montamos o Descriptor usando a lista de claims
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(claims), // Passamos a lista aqui
+            Subject = new ClaimsIdentity(claims), 
             Issuer = configuration["Jwt:Issuer"],
             Audience = configuration["Jwt:Audience"],
-            Expires = DateTime.UtcNow.AddHours(8),
+            Expires = DateTime.UtcNow.AddHours(TokenExpiresInHours),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(secretKey),
                 SecurityAlgorithms.HmacSha256Signature)

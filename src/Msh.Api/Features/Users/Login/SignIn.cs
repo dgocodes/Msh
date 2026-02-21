@@ -54,33 +54,7 @@ public class SignInHandler(
         context.UserRefreshTokens.Add(refreshToken);
         await context.SaveChangesAsync(ct);
 
-        // 2. Configurações de Cookies
-        var defaultCookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true, // Certifique-se de usar HTTPS em Prod
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1)
-        };
-
-        // 3. Enviando os Cookies via HttpContext
-        httpContext.Response.Cookies.Append("token", accessToken, defaultCookieOptions);
-
-        httpContext.Response.Cookies.Append("refreshToken", refreshTokenValue, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(7)
-        });
-
-        httpContext.Response.Cookies.Append("userType", user.Type.ToString(), new CookieOptions
-        {
-            HttpOnly = false, // Permitir que o Front-end leia o tipo do usuário
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1)
-        });
+        tokenService.AppendAuthCookies(httpContext, accessToken, refreshTokenValue, user);
 
         return Results.Ok(new
         {

@@ -36,17 +36,26 @@ public static class DependencyInjection
                 ValidIssuer = jwtSettings["Issuer"],
                 ValidateAudience = true,
                 ValidAudience = jwtSettings["Audience"],
-                ValidateLifetime = true
+                ValidateLifetime = true,
             };
 
             options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
-                    // Verifica se existe um cookie chamado "token"
+                    // 1. Tenta pegar do Cookie
                     var accessToken = context.Request.Cookies["token"];
 
-                    // Se o token existir no cookie, extrai para o contexto de autenticação
+                    // 2. Se não tem no cookie, tenta pegar do Header Authorization (Bearer)
+                    if (string.IsNullOrEmpty(accessToken))
+                    {
+                        string authHeader = context.Request.Headers["Authorization"]!;
+                        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                        {
+                            accessToken = authHeader["Bearer ".Length..].Trim();
+                        }
+                    }
+
                     if (!string.IsNullOrEmpty(accessToken))
                     {
                         context.Token = accessToken;

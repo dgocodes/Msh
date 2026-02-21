@@ -1,6 +1,4 @@
-﻿using Msh.Api.Infra.Identity;
-
-namespace Msh.Api.Core.Entities;
+﻿namespace Msh.Api.Infra.Identity;
 
 public class UserRefreshToken
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Msh.Api.Core.Commom;
-using Msh.Api.Core.Entities;
+using Msh.Api.Core.Enums;
 using Msh.Api.Infra.Identity;
 
 namespace Msh.Api.Features.Users.RegisterUsers;
