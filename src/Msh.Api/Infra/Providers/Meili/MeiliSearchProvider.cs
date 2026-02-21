@@ -63,6 +63,11 @@ public class MeiliSearchProvider : ISearchProvider
             result.ProcessingTimeMs
         );
     }
+
+    public async Task<ProductResponse> GetDocumentAsync(string idProduto, CancellationToken cancellationToken = default)
+    {
+        return await _index.GetDocumentAsync<ProductResponse>(idProduto, cancellationToken: cancellationToken);
+    }
 }
 
 

@@ -18,7 +18,8 @@ public record ProductResponse(
     [property: JsonPropertyName("marca")] string Brand,
     [property: JsonPropertyName("lista")] string List,
     [property: JsonPropertyName("preco")] decimal Price,
-    [property: JsonPropertyName("estoque")] int Stock);
+    [property: JsonPropertyName("estoque")] int Stock,
+    [property: JsonPropertyName("infAdicionais")] string InfAdicionais);
 
 public record FacetResponse(string Facet, List<FacetItemResponse> Options);
 

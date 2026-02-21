@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Msh.Api;
 using Msh.Api.Core.Commom;
-using Msh.Api.Endpoints;
 using Msh.Api.Infra.Context;
 using Msh.Api.Infra.Context.Seed;
 using Msh.Api.Infra.Errors;
@@ -61,8 +60,6 @@ app.UseCors(configuration.GetValue<string>("Cors:Name") ?? "NextJsApp");
 app.UseResponseCompression();
 
 if (configuration.GetValue("Features:UseRateLimit", true)) app.UseRateLimiter();
-
-app.MapProductEndpoints();
 
 await DbInitializer.SeedAdminUser(app);
 
