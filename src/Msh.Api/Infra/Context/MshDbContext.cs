@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using System.Reflection.Emit;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Msh.Api.Core.Entities;
 using Msh.Api.Infra.Identity;
@@ -48,13 +49,28 @@ public class MshDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Cart>(entity =>
         {
             entity.HasKey(c => c.Id);
-            // Garante que não teremos dois carrinhos para o mesmo usuário
-            entity.HasIndex(c => c.UserId).IsUnique();
 
+            // Define que o UserId é único
+            entity.HasIndex(c => c.UserId)
+                  .IsUnique();
+
+            entity.Property(c => c.UserId)
+                  .IsRequired();
+
+            // Configura a relação 1:N (Um Carrinho para Muitos Itens)
             entity.HasMany(c => c.Items)
-                  .WithOne()
-                  .HasForeignKey(i => i.CartId) // Se você adicionar CartId no CartItem
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .WithOne(ci => ci.Cart)      // O Item aponta de volta para o Carrinho
+                  .HasForeignKey(ci => ci.CartId) // A chave estrangeira está em CartItem
+                  .OnDelete(DeleteBehavior.Cascade); // Se deletar o Cart, deleta os Items
+        });
+
+        builder.Entity<CartItem>(entity =>
+        {
+            entity.HasKey(ci => ci.Id);
+
+            // Garante que o SkuId e Quantity sejam preenchidos
+            entity.Property(ci => ci.SkuId).IsRequired();
+            entity.Property(ci => ci.Quantity).IsRequired();
         });
     }
 }
